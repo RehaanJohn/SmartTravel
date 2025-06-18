@@ -105,6 +105,12 @@ function Home() {
                         </div>
                     </div>
                 </div>
+                <button 
+                    className='absolute top-4 right-4 bg-gradient-to-r from-purple-600 via-blue-600 to-teal-600 hover:from-purple-700 hover:via-blue-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg flex items-center justify-center space-x-2 text-base z-50'
+                    onClick={() => navigate('/itinerary')}>
+                    
+                    Current Itinerary
+                </button>
             </header>
 
             <div className="relative px-6 sm:px-8 lg:px-12 pb-16">
@@ -153,6 +159,8 @@ function Home() {
                                     </>
                                 )}
                             </button>
+
+                            
                         </div>
                     </div>
 
