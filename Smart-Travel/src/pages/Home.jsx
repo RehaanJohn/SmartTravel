@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Search, MapPin, Sparkles, Plane, Cloud, Sun, Wind, Droplets, Star, Calendar, Clock, Globe, Compass } from 'lucide-react';
 import '../index.css';
+import {useNavigate} from 'react-router-dom';
+import Results from './Result';
 
 
 function Home() {
+
+    const navigate = useNavigate();
+
     const [destination, setDestination] = useState('');
     const [interests, setInterests] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [travelData, setTravelData] = useState(null);
+    const [showResults, setShowResults] = useState(false);
 
     // Mock data 
     const mockWeatherData = {
@@ -44,12 +50,13 @@ function Home() {
 
     const handleSearch = async () => {
         if (!destination.trim()) return;
-        
+
+        setShowResults(false); 
         setIsLoading(true);
         
         // Simulate API call delay
         setTimeout(() => {
-            setTravelData({
+            const data = {
                 destination: destination,
                 weather: mockWeatherData,
                 attractions: mockAttractions,
@@ -60,8 +67,14 @@ function Home() {
                     `The city is home to more than 130 museums and galleries`,
                     `Local cuisine features over 400 traditional dishes`
                 ]
-            });
+            };
+
+            localStorage.setItem('travelData', JSON.stringify(data));
+            setTravelData(data);
             setIsLoading(false);
+
+            // ✅ Navigate to new page
+            navigate('/results');
         }, 2000);
     };
 
@@ -142,6 +155,15 @@ function Home() {
                             </button>
                         </div>
                     </div>
+
+                    {/* ✅ Render Results if ready */}
+                    {showResults && travelData && (
+                        <Results
+                            travelData={travelData}
+                            destination={destination}
+                            interests={interests}
+                        />
+                    )}
                 </div>
             </div>
         </div>
