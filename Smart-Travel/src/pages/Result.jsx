@@ -116,6 +116,48 @@ function Results() {
         );
     }
 
+    const getAttractionIcon = (description) => {
+        const desc = description.toLowerCase();
+        if (desc.includes('museum')) return '🏛️';
+        if (desc.includes('park') || desc.includes('garden')) return '🌳';
+        if (desc.includes('church') || desc.includes('cathedral')) return '⛪';
+        if (desc.includes('palace') || desc.includes('castle')) return '🏰';
+        if (desc.includes('bridge')) return '🌉';
+        if (desc.includes('tower')) return '🗼';
+        if (desc.includes('square') || desc.includes('place')) return '🏛️';
+        if (desc.includes('market')) return '🏪';
+        if (desc.includes('beach')) return '🏖️';
+        if (desc.includes('mountain')) return '⛰️';
+        return '📍';
+    };
+
+    const formatDescription = (description) => {
+        if (!description) return 'Popular attraction';
+        
+        // Convert API types to readable description
+        const typeMap = {
+            'tourist_attraction': 'Tourist Attraction',
+            'museum': 'Museum',
+            'point_of_interest': 'Point of Interest',
+            'establishment': 'Establishment',
+            'park': 'Park',
+            'amusement_park': 'Amusement Park',
+            'art_gallery': 'Art Gallery',
+            'church': 'Church',
+            'place_of_worship': 'Place of Worship'
+        };
+        
+        if (description.includes(',')) {
+            return description.split(',')
+                .map(type => typeMap[type.trim()] || type.trim())
+                .filter(type => type !== 'Establishment' && type !== 'Point of Interest')
+                .slice(0, 3)
+                .join(', ') || 'Popular attraction';
+        }
+        
+        return typeMap[description] || description;
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
             {/* Header with back button */}
@@ -205,7 +247,7 @@ function Results() {
                         </div>
 
                         {/* Top Attractions - Now using Google Places API */}
-                        <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8">
+                       <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8">
                             <div className="flex items-center mb-8">
                                 <Camera className="h-6 w-6 mr-3 text-purple-400" />
                                 <h3 className="text-2xl font-bold text-white">Top 5 Attractions</h3>
@@ -230,29 +272,45 @@ function Results() {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                                 {(attractions || travelData.attractions).map((attraction, index) => (
                                     <div key={index} className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 hover:border-gray-600 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg">
-                                        <div className="text-center mb-4">
-                                            {attraction.image && attraction.image.startsWith('http') ? (
-                                                <img 
-                                                    src={attraction.image} 
-                                                    alt={attraction.name}
-                                                    className="w-full h-32 object-cover rounded-lg mb-3"
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                        e.target.nextSibling.style.display = 'block';
-                                                    }}
-                                                />
-                                            ) : null}
-                                            <div className="text-3xl mb-3" style={{display: attraction.image && attraction.image.startsWith('http') ? 'none' : 'block'}}>
-                                                {attraction.image || '📍'}
+                                        <div className="text-center">
+                                            {/* Image container with fixed height */}
+                                            <div className="w-full h-32 mb-4 rounded-lg overflow-hidden bg-gray-700/50 flex items-center justify-center">
+                                                {attraction.image && attraction.image.startsWith('http') ? (
+                                                    <img 
+                                                        src={attraction.image} 
+                                                        alt={attraction.name}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            e.target.parentNode.innerHTML = '<div class="text-3xl text-gray-400">' + getAttractionIcon(attraction.description || attraction.name) + '</div>';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="text-3xl text-gray-400">
+                                                        {getAttractionIcon(attraction.description || attraction.name)}
+                                                    </div>
+                                                )}
                                             </div>
-                                            <h4 className="text-lg font-semibold text-white mb-2">{attraction.name}</h4>
+                                            
+                                            {/* Attraction info */}
+                                            <h4 className="text-lg font-semibold text-white mb-2 line-clamp-2">{attraction.name}</h4>
+                                            
+                                            {/* Rating */}
                                             <div className="flex items-center justify-center space-x-1 mb-3">
                                                 <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                                                <span className="text-white font-semibold">{attraction.rating}</span>
+                                                <span className="text-white font-semibold">
+                                                    {attraction.rating && attraction.rating !== 'N/A' ? attraction.rating : '4.0'}
+                                                </span>
                                             </div>
-                                            <p className="text-gray-300 text-sm leading-relaxed">{attraction.description}</p>
+                                            
+                                            {/* Description */}
+                                            <p className="text-gray-300 text-sm leading-relaxed line-clamp-3">
+                                                {formatDescription(attraction.description)}
+                                            </p>
+                                            
+                                            {/* Address if available */}
                                             {attraction.address && (
-                                                <p className="text-gray-400 text-xs mt-2">📍 {attraction.address}</p>
+                                                <p className="text-gray-400 text-xs mt-2 line-clamp-2">📍 {attraction.address}</p>
                                             )}
                                         </div>
                                     </div>
