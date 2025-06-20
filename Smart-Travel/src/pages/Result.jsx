@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Cloud, Newspaper, Calendar, Sparkles, Camera, Star, ArrowLeft, Clock, Wind, Droplets } from 'lucide-react';
 import { fetchWeather } from '../services/weatherService';
+import { fetchAttractions } from '../services/travelService';
 import { useLocation } from 'react-router-dom';
 
 function Results() {
     const [travelData, setTravelData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [weather, setWeather] = useState(null);
-
     const [weatherError, setWeatherError] = useState(null);
     const [weatherLoading, setWeatherLoading] = useState(false);
-
-    
+    const [attractions, setAttractions] = useState(null);
+    const [attractionsLoading, setAttractionsLoading] = useState(false);
+    const [attractionsError, setAttractionsError] = useState(null);
 
     const useQuery = () => new URLSearchParams(useLocation().search);
     const query = useQuery();
@@ -24,15 +25,21 @@ function Results() {
             const data = JSON.parse(stored);
             setTravelData(data);
             
-            // Fetch weather using the city parameter from URL (better for weather API)
-            // or fall back to the destination name
+            // Fetch weather and attractions
             const cityForWeather = cityParam || data.citySearchName || data.destination;
-            console.log('City for weather lookup:', cityForWeather); // Debug log
+            const cityForAttractions = data.destination; // Use clean city name for attractions
+            
+            console.log('City for weather lookup:', cityForWeather);
+            console.log('City for attractions lookup:', cityForAttractions);
+            
             if (cityForWeather) {
                 fetchWeatherData(cityForWeather);
             }
+            
+            if (cityForAttractions) {
+                fetchAttractionsData(cityForAttractions);
+            }
         }
-        // Set loading to false after attempting to load data
         setIsLoading(false);
     }, [cityParam]);
 
@@ -40,9 +47,9 @@ function Results() {
         setWeatherLoading(true);
         setWeatherError(null);
         try {
-            console.log('Fetching weather for:', city); // Debug log
+            console.log('Fetching weather for:', city);
             const result = await fetchWeather(city);
-            console.log('Weather result:', result); // Debug log
+            console.log('Weather result:', result);
             if (result) {
                 setWeather(result);
             } else {
@@ -54,6 +61,26 @@ function Results() {
             setWeatherError(error.message || "Weather fetch failed");
         } finally {
             setWeatherLoading(false);
+        }
+    };
+
+    const fetchAttractionsData = async (city) => {
+        setAttractionsLoading(true);
+        setAttractionsError(null);
+        try {
+            console.log('Fetching attractions for:', city);
+            const result = await fetchAttractions(city);
+            console.log('Attractions result:', result);
+            if (result && result.length > 0) {
+                setAttractions(result);
+            } else {
+                setAttractionsError("No attractions found");
+            }
+        } catch (error) {
+            console.error("Attractions fetch error:", error);
+            setAttractionsError(error.message || "Failed to fetch attractions");
+        } finally {
+            setAttractionsLoading(false);
         }
     };
 
@@ -177,23 +204,56 @@ function Results() {
                             )}
                         </div>
 
-                        {/* Top Attractions */}
+                        {/* Top Attractions - Now using Google Places API */}
                         <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8">
                             <div className="flex items-center mb-8">
                                 <Camera className="h-6 w-6 mr-3 text-purple-400" />
                                 <h3 className="text-2xl font-bold text-white">Top 5 Attractions</h3>
+                                {attractionsLoading && (
+                                    <div className="ml-4 w-5 h-5 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+                                )}
                             </div>
+                            
+                            {attractionsError ? (
+                                <div className="bg-red-900/20 border border-red-700 rounded-xl p-6 mb-6">
+                                    <p className="text-red-400">⚠️ {attractionsError}</p>
+                                    <button 
+                                        onClick={() => fetchAttractionsData(travelData.destination)}
+                                        className="mt-2 text-blue-400 hover:text-blue-300 underline text-sm"
+                                    >
+                                        Try Again
+                                    </button>
+                                    <p className="text-gray-400 text-sm mt-2">Showing fallback attractions below:</p>
+                                </div>
+                            ) : null}
+
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-                                {travelData.attractions.map((attraction, index) => (
+                                {(attractions || travelData.attractions).map((attraction, index) => (
                                     <div key={index} className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 hover:border-gray-600 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg">
                                         <div className="text-center mb-4">
-                                            <div className="text-3xl mb-3">{attraction.image}</div>
+                                            {attraction.image && attraction.image.startsWith('http') ? (
+                                                <img 
+                                                    src={attraction.image} 
+                                                    alt={attraction.name}
+                                                    className="w-full h-32 object-cover rounded-lg mb-3"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.nextSibling.style.display = 'block';
+                                                    }}
+                                                />
+                                            ) : null}
+                                            <div className="text-3xl mb-3" style={{display: attraction.image && attraction.image.startsWith('http') ? 'none' : 'block'}}>
+                                                {attraction.image || '📍'}
+                                            </div>
                                             <h4 className="text-lg font-semibold text-white mb-2">{attraction.name}</h4>
                                             <div className="flex items-center justify-center space-x-1 mb-3">
                                                 <Star className="h-4 w-4 text-yellow-400 fill-current" />
                                                 <span className="text-white font-semibold">{attraction.rating}</span>
                                             </div>
                                             <p className="text-gray-300 text-sm leading-relaxed">{attraction.description}</p>
+                                            {attraction.address && (
+                                                <p className="text-gray-400 text-xs mt-2">📍 {attraction.address}</p>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
